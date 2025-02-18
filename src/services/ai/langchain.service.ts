@@ -24,7 +24,7 @@ export class LangChainService {
             await this.pineconeService.initialize()
             logger.info("LangChain service initialized")
         } catch (error) {
-            logger.error("Failed to initialize LangChain service:", error)
+            logger.error("Failed to initialize LangChain service :", error)
             throw error
         }
     }
