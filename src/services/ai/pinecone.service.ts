@@ -20,7 +20,7 @@ export class PineconeService {
     async initialize(): Promise<void> {
         try {
             this.index = this.pinecone.index(config.pinecone.indexName)
-            logger.info("Pinecone service initialized")
+            logger.info("Pinecone service initialized.")
         } catch (error) {
             logger.error("Failed to initialize Pinecone:", error)
             throw error
