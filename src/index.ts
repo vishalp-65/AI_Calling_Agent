@@ -1,8 +1,16 @@
 import { config } from "./config"
 import { logger } from "./utils/logger"
+import { databaseConnection } from "./database/connection"
+import { app, initializeServices } from "./app"
 
 const startServer = async () => {
     try {
+        // Initialize database connection
+        await databaseConnection.connect()
+
+        // Initialize services
+        await initializeServices()
+
         // Start server
         app.listen(config.port, () => {
             logger.info(`Server started on port ${config.port}`)
