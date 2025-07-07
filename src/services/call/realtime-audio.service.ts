@@ -5,8 +5,8 @@ import { webSocketServer } from "../../websocket"
 import { kafkaService } from "../messaging/kafka.service"
 import { Readable, Transform } from "stream"
 import { eventService } from "../messaging/event.service"
-import { realTimeMetricsService } from "../metrics/realtime-metrics.service"
 import { REALTIME_CONFIG } from "../../config/realtime"
+import { realTimeMetricsService } from "../metrics/realtime-metrics.service"
 
 export class RealTimeAudioService {
     private openAIService: OpenAIService
