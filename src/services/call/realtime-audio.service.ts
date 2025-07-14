@@ -1,5 +1,5 @@
 import { logger } from "../../utils/logger"
-import { OpenAIService } from "../ai/openai.service"
+import { GeminiService } from "../ai/gemini.service"
 import { SpeechService } from "./speech.service"
 import { webSocketServer } from "../../websocket"
 import { kafkaService } from "../messaging/kafka.service"
@@ -9,7 +9,7 @@ import { REALTIME_CONFIG } from "../../config/realtime"
 import { realTimeMetricsService } from "../metrics/realtime-metrics.service"
 
 export class RealTimeAudioService {
-    private openAIService: OpenAIService
+    private geminiService: GeminiService
     private speechService: SpeechService
     private activeCalls: Map<string, any> = new Map()
     private conversationHistory: Map<
@@ -18,7 +18,7 @@ export class RealTimeAudioService {
     > = new Map()
 
     constructor() {
-        this.openAIService = new OpenAIService()
+        this.geminiService = new GeminiService()
         this.speechService = new SpeechService()
     }
 
@@ -161,7 +161,7 @@ export class RealTimeAudioService {
                 currentLanguage: "english", // Default language, could be detected
                 userInput: transcriptResult.text,
                 confidence: transcriptResult.confidence || 0.9,
-                conversationHistory: history.map(msg => ({
+                conversationHistory: history.map((msg) => ({
                     id: String(Date.now()),
                     role: msg.role as "user" | "assistant",
                     content: msg.content,
@@ -170,7 +170,9 @@ export class RealTimeAudioService {
                 })),
                 timestamp: new Date().toISOString()
             }
-            const aiResponse = await this.openAIService.generateNaturalResponse(conversationContext)
+            const aiResponse = await this.geminiService.generateNaturalResponse(
+                conversationContext
+            )
             const aiResponseTime = Date.now() - aiStartTime
 
             // Add AI response to history

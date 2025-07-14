@@ -9,8 +9,8 @@ export const twilioClient = twilio(
 export const TWILIO_CONFIG = {
     phoneNumber: config.twilio.phoneNumber,
     voice: {
-        language: "en-US" as const,
-        voice: "alice" as const
+        language: "hi-IN" as const,
+        voice: "aditi" as const
     },
     speechRecognition: {
         timeout: 5,

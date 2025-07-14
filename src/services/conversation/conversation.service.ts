@@ -1,4 +1,4 @@
-import { OpenAIService } from "../ai/openai.service"
+import { GeminiService } from "../ai/gemini.service"
 import { LanguageDetectionService } from "../ai/language-detection.service"
 import { ConversationHistoryService } from "./conversation-history.service"
 import { logger } from "../../utils/logger"
@@ -9,12 +9,12 @@ import {
 import { eventService } from "../messaging/event.service"
 
 export class ConversationService {
-    private openAIService: OpenAIService
+    private geminiService: GeminiService
     private languageDetectionService: LanguageDetectionService
     private conversationHistoryService: ConversationHistoryService
 
     constructor() {
-        this.openAIService = new OpenAIService()
+        this.geminiService = new GeminiService()
         this.languageDetectionService = new LanguageDetectionService()
         this.conversationHistoryService = new ConversationHistoryService()
     }
@@ -53,7 +53,7 @@ export class ConversationService {
             }
 
             // Generate AI response
-            const aiResponse = await this.openAIService.generateNaturalResponse(
+            const aiResponse = await this.geminiService.generateNaturalResponse(
                 context
             )
 
@@ -192,7 +192,7 @@ export class ConversationService {
             // Get conversation summary
             const history = this.conversationHistoryService.getHistory(callSid)
             const summary =
-                await this.openAIService.generateConversationSummary(history)
+                await this.geminiService.generateConversationSummary(history)
 
             // Publish end event
             await eventService.publishConversationEvent("conversation.ended", {

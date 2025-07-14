@@ -1,8 +1,8 @@
 import { Request, Response } from "express"
 import { ResponseHandler } from "../utils/response"
-import { OpenAIService } from "../services/ai/openai.service"
+import { GeminiService } from "../services/ai/gemini.service"
 
-const aiService = new OpenAIService()
+const aiService = new GeminiService()
 
 export class AgentController {
     async message(req: Request, res: Response): Promise<any> {
@@ -16,7 +16,9 @@ export class AgentController {
                 conversationHistory: history || [],
                 timestamp: new Date().toISOString()
             }
-            const aiResponse = await aiService.generateNaturalResponse(conversationContext)
+            const aiResponse = await aiService.generateNaturalResponse(
+                conversationContext
+            )
             return ResponseHandler.success(
                 res,
                 aiResponse,

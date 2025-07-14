@@ -14,7 +14,7 @@ export const AppDataSource = new DataSource({
     password: config.database.password,
     database: config.database.name,
     synchronize: config.env === "development",
-    logging: config.env === "development",
+    // logging: config.env === "development",
     entities: [Call, Customer, Agent, Knowledge, CallSession],
     migrations: ["src/database/migrations/*.ts"],
     subscribers: ["src/database/subscribers/*.ts"],

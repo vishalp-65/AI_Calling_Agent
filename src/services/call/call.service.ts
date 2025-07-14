@@ -1,5 +1,5 @@
 import { TwilioService } from "./twilio.service"
-import { OpenAIService } from "../ai/openai.service"
+import { GeminiService } from "../ai/gemini.service"
 import { SpeechService } from "./speech.service"
 import { PineconeService } from "../ai/pinecone.service"
 import { eventService } from "../messaging/event.service"
@@ -8,18 +8,21 @@ import { CallRequest, CallResponse } from "../../types/call.types"
 import { callQueue } from "../queue/bull.service"
 import { webSocketServer } from "../../websocket"
 import { Readable } from "stream"
+import { ConversationHistoryService } from "../conversation/conversation-history.service"
 
 export class CallService {
     private twilioService: TwilioService
-    private openAIService: OpenAIService
+    private geminiService: GeminiService
     private speechService: SpeechService
     private pineconeService: PineconeService
+    private historyService = new ConversationHistoryService()
 
     constructor() {
         this.twilioService = new TwilioService()
-        this.openAIService = new OpenAIService()
+        this.geminiService = new GeminiService()
         this.speechService = new SpeechService()
         this.pineconeService = new PineconeService()
+        this.historyService = new ConversationHistoryService()
     }
 
     async initiateCall(request: CallRequest): Promise<CallResponse> {
@@ -62,10 +65,10 @@ export class CallService {
             const transcript = await this.twilioService.getCallTranscript(
                 callSid
             )
-            const sentiment = await this.openAIService.analyzeCallSentiment(
+            const sentiment = await this.geminiService.analyzeCallSentiment(
                 transcript
             )
-            const summary = await this.openAIService.summarizeCall(transcript)
+            const summary = await this.geminiService.summarizeCall(transcript)
 
             // Upsert knowledge
             await this.pineconeService.upsertKnowledge(callSid, transcript)
@@ -83,6 +86,9 @@ export class CallService {
         }
     }
 
+    /**
+     * Processes audio chunks in real time, maintaining conversation context.
+     */
     async processRealTimeCall(callSid: string): Promise<void> {
         try {
             const audioStream = await this.twilioService.getRealTimeAudio(
@@ -90,29 +96,83 @@ export class CallService {
             )
             const readStream = new Readable().wrap(audioStream)
 
-            // Real-time processing
+            // Ensure history initialized
+            const history = this.historyService.getHistory(callSid) || []
+            let currentLanguage =
+                this.historyService.getCurrentLanguage(callSid) || "english"
+
             readStream.on("data", async (chunk: any) => {
-                const transcriptResult =
-                    await this.speechService.convertSpeechToText(chunk)
-                const aiResponse =
-                    await this.openAIService.generateNaturalResponse(
-                        transcriptResult.text
+                try {
+                    // Convert speech to text
+                    const transcriptResult =
+                        await this.speechService.convertSpeechToText(chunk)
+                    const userInput = transcriptResult.text
+                    const confidence = transcriptResult.confidence
+
+                    // Build context
+                    const context = {
+                        callSid,
+                        userInput,
+                        confidence: confidence ?? 0,
+                        conversationHistory: history,
+                        currentLanguage,
+                        timestamp: new Date().toISOString()
+                    }
+
+                    // Generate AI response
+                    const aiResponse =
+                        await this.geminiService.generateNaturalResponse(
+                            context
+                        )
+
+                    // Update history and language
+                    history.push({
+                        role: "user",
+                        content: userInput,
+                        id: callSid,
+                        language:
+                            aiResponse.detectedLanguage || currentLanguage,
+                        timestamp: new Date().toISOString()
+                    })
+                    history.push({
+                        role: "assistant",
+                        content: aiResponse.message,
+                        id: callSid,
+                        language:
+                            aiResponse.detectedLanguage || currentLanguage,
+                        timestamp: new Date().toISOString()
+                    })
+                    currentLanguage =
+                        aiResponse.detectedLanguage || currentLanguage
+                    this.historyService.setCurrentLanguage(
+                        callSid,
+                        currentLanguage
                     )
-                const ttsResponse =
-                    await this.speechService.convertTextToSpeech({
-                        text: aiResponse.message
-                    })
-                webSocketServer
-                    .getIO()
-                    .to(callSid)
-                    .emit("call-update", {
-                        audio: ttsResponse.toString("base64"),
-                        text: aiResponse.message
-                    })
+
+                    // Convert AI text to speech
+                    const ttsBuffer =
+                        await this.speechService.convertTextToSpeech({
+                            text: aiResponse.message
+                        })
+
+                    // Emit both audio and text
+                    webSocketServer
+                        .getIO()
+                        .to(callSid)
+                        .emit("call-update", {
+                            audio: ttsBuffer.toString("base64"),
+                            text: aiResponse.message
+                        })
+                } catch (err) {
+                    logger.error(
+                        `Error during real-time processing for ${callSid}:`,
+                        err
+                    )
+                }
             })
 
-            readStream.on("end", () => {
-                this.endCall(callSid)
+            readStream.on("end", async () => {
+                await this.endCall(callSid)
             })
         } catch (error) {
             logger.error("Failed to process real-time call:", error)

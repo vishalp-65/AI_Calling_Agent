@@ -30,9 +30,13 @@ const envVarsSchema = Joi.object({
     TWILIO_AUTH_TOKEN: Joi.string().required(),
     TWILIO_PHONE_NUMBER: Joi.string().required(),
 
-    // OpenAI
-    OPENAI_API_KEY: Joi.string().required(),
-    OPENAI_MODEL: Joi.string().default("gpt-4"),
+    // // OpenAI
+    // OPENAI_API_KEY: Joi.string().required(),
+    // OPENAI_MODEL: Joi.string().default("o4-mini"),
+
+    // Gemini
+    GEMINI_API_KEY: Joi.string().required(),
+    GEMINI_MODEL: Joi.string().default("gemini-1.5-flash"),
 
     // Pinecone
     PINECONE_API_KEY: Joi.string().required(),
@@ -96,9 +100,14 @@ export const config = {
         phoneNumber: envVars.TWILIO_PHONE_NUMBER
     },
 
-    openai: {
-        apiKey: envVars.OPENAI_API_KEY,
-        model: envVars.OPENAI_MODEL
+    // openai: {
+    //     apiKey: envVars.OPENAI_API_KEY,
+    //     model: envVars.OPENAI_MODEL
+    // },
+
+    gemini: {
+        apiKey: envVars.GEMINI_API_KEY,
+        model: envVars.GEMINI_MODEL
     },
 
     pinecone: {

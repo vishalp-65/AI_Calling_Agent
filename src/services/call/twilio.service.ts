@@ -7,9 +7,7 @@ import {
     CallWebhookPayload
 } from "../../types/call.types"
 import { EventService } from "../messaging/event.service"
-import { OpenAIService } from "../ai/openai.service"
-import { SpeechService } from "./speech.service"
-import { webSocketServer } from "../../websocket"
+import { GeminiService } from "../ai/gemini.service"
 import { Readable } from "stream"
 // import WebSocket from "ws"
 
@@ -174,7 +172,7 @@ export class TwilioService {
 
             // Download and transcribe
             const audioBuffer = await this.downloadAudioAsBuffer(audioUrl)
-            const transcriptResult = await new OpenAIService().speechToText(
+            const transcriptResult = await new GeminiService().speechToText(
                 audioBuffer
             )
 
