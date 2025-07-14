@@ -8,11 +8,15 @@ export class AgentController {
     async message(req: Request, res: Response): Promise<any> {
         try {
             const { prompt, context, history } = req.body
-            const aiResponse = await aiService.generateResponse(
-                prompt,
-                context,
-                history
-            )
+            const conversationContext = {
+                callSid: "agent-controller-call",
+                currentLanguage: context?.language || "english",
+                userInput: prompt,
+                confidence: 0.9,
+                conversationHistory: history || [],
+                timestamp: new Date().toISOString()
+            }
+            const aiResponse = await aiService.generateNaturalResponse(conversationContext)
             return ResponseHandler.success(
                 res,
                 aiResponse,

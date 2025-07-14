@@ -156,11 +156,21 @@ export class RealTimeAudioService {
 
             // Generate AI response
             const aiStartTime = Date.now()
-            const aiResponse = await this.openAIService.generateResponse(
-                transcriptResult.text,
-                { callSid, timestamp: Date.now() },
-                history
-            )
+            const conversationContext = {
+                callSid,
+                currentLanguage: "english", // Default language, could be detected
+                userInput: transcriptResult.text,
+                confidence: transcriptResult.confidence || 0.9,
+                conversationHistory: history.map(msg => ({
+                    id: String(Date.now()),
+                    role: msg.role as "user" | "assistant",
+                    content: msg.content,
+                    language: "english",
+                    timestamp: new Date().toISOString()
+                })),
+                timestamp: new Date().toISOString()
+            }
+            const aiResponse = await this.openAIService.generateNaturalResponse(conversationContext)
             const aiResponseTime = Date.now() - aiStartTime
 
             // Add AI response to history

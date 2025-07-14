@@ -43,6 +43,20 @@ export class EventService {
             throw error
         }
     }
+
+    async publishConversationEvent(eventType: string, data: any): Promise<void> {
+        try {
+            await kafkaService.publishMessage("conversation-events", {
+                eventType,
+                data,
+                timestamp: new Date().toISOString()
+            })
+            logger.info(`Conversation event published: ${eventType}`)
+        } catch (error) {
+            logger.error(`Failed to publish conversation event: ${eventType}`, error)
+            throw error
+        }
+    }
 }
 
 export const eventService = new EventService()

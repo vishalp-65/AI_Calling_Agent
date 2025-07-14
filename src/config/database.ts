@@ -4,7 +4,7 @@ import { Call } from "../models/entities/Call.entity"
 import { Customer } from "../models/entities/Customer.entity"
 import { Agent } from "../models/entities/Agent.entity"
 import { Knowledge } from "../models/entities/Knowledge.entity"
-import { CallSession } from "@/models/entities/CallSession.entity"
+import { CallSession } from "../models/entities/CallSession.entity"
 
 export const AppDataSource = new DataSource({
     type: "postgres",

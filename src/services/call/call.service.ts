@@ -91,20 +91,24 @@ export class CallService {
             const readStream = new Readable().wrap(audioStream)
 
             // Real-time processing
-            readStream.on("data", async (chunk) => {
+            readStream.on("data", async (chunk: any) => {
                 const transcriptResult =
                     await this.speechService.convertSpeechToText(chunk)
-                const aiResponse = await this.openAIService.generateResponse(
-                    transcriptResult.text
-                )
+                const aiResponse =
+                    await this.openAIService.generateNaturalResponse(
+                        transcriptResult.text
+                    )
                 const ttsResponse =
                     await this.speechService.convertTextToSpeech({
                         text: aiResponse.message
                     })
-                webSocketServer.getIO().to(callSid).emit('call-update', {
-                    audio: ttsResponse.toString("base64"),
-                    text: aiResponse.message
-                })
+                webSocketServer
+                    .getIO()
+                    .to(callSid)
+                    .emit("call-update", {
+                        audio: ttsResponse.toString("base64"),
+                        text: aiResponse.message
+                    })
             })
 
             readStream.on("end", () => {
@@ -120,6 +124,100 @@ export class CallService {
     async getCallStatus(callSid: string): Promise<string> {
         // delegate down to TwilioService
         return this.twilioService.fetchCallStatus(callSid)
+    }
+
+    async updateCallStatus(callSid: string, status: string): Promise<void> {
+        try {
+            logger.info(`Updating call status: ${callSid} -> ${status}`)
+            // Here you would update your database with the new status
+            // For now, we'll just log and emit an event
+            await eventService.publishCallEvent("call.status.updated", {
+                callSid,
+                status,
+                timestamp: new Date().toISOString()
+            })
+        } catch (error) {
+            logger.error(`Failed to update call status for ${callSid}:`, error)
+            throw error
+        }
+    }
+
+    async updateCallRecording(
+        callSid: string,
+        recordingUrl: string,
+        recordingSid: string,
+        duration: number
+    ): Promise<void> {
+        try {
+            logger.info(`Updating call recording: ${callSid}`)
+            // Here you would update your database with recording information
+            await eventService.publishCallEvent("call.recording.updated", {
+                callSid,
+                recordingUrl,
+                recordingSid,
+                duration,
+                timestamp: new Date().toISOString()
+            })
+        } catch (error) {
+            logger.error(
+                `Failed to update call recording for ${callSid}:`,
+                error
+            )
+            throw error
+        }
+    }
+
+    async updateCallTranscription(
+        callSid: string,
+        transcriptionText: string,
+        transcriptionStatus: string
+    ): Promise<void> {
+        try {
+            logger.info(`Updating call transcription: ${callSid}`)
+            // Here you would update your database with transcription information
+            await eventService.publishCallEvent("call.transcription.updated", {
+                callSid,
+                transcriptionText,
+                transcriptionStatus,
+                timestamp: new Date().toISOString()
+            })
+        } catch (error) {
+            logger.error(
+                `Failed to update call transcription for ${callSid}:`,
+                error
+            )
+            throw error
+        }
+    }
+
+    async initializeCall(callSid: string, callData: any): Promise<void> {
+        try {
+            logger.info(`Initializing call: ${callSid}`)
+            // Here you would create the call record in your database
+            await eventService.publishCallEvent("call.initialized", {
+                callSid,
+                ...callData,
+                timestamp: new Date().toISOString()
+            })
+        } catch (error) {
+            logger.error(`Failed to initialize call ${callSid}:`, error)
+            throw error
+        }
+    }
+
+    async updateCallMetrics(callSid: string, metrics: any): Promise<void> {
+        try {
+            logger.info(`Updating call metrics: ${callSid}`)
+            // Here you would update call metrics in your database
+            await eventService.publishCallEvent("call.metrics.updated", {
+                callSid,
+                metrics,
+                timestamp: new Date().toISOString()
+            })
+        } catch (error) {
+            logger.error(`Failed to update call metrics for ${callSid}:`, error)
+            throw error
+        }
     }
 }
 
