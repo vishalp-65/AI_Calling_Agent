@@ -22,7 +22,6 @@ export class TwilioService {
 
     async initiateCall(request: CallRequest): Promise<CallResponse> {
         try {
-            console.log("Initiate call request", request)
             const call = await this.client.calls.create({
                 to: request.toNumber,
                 from: request.fromNumber || TWILIO_CONFIG.phoneNumber,
@@ -35,11 +34,9 @@ export class TwilioService {
                     "completed"
                 ],
                 statusCallbackMethod: "POST",
-record: false, // Disable recording to save costs
+                record: false, // Disable recording to save costs
                 timeout: 30
             })
-
-            console.log("call", call)
 
             await this.eventService.publishCallEvent("call.initiated", {
                 callSid: call.sid,

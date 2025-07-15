@@ -31,9 +31,9 @@ export class CallService {
             logger.info(`Initiated call with ID: ${response.callSid}`)
 
             // Add call processing job
-            await callQueue.addJob("process-call", {
-                callSid: response.callSid
-            })
+            // await callQueue.addJob("process-call", {
+            //     callSid: response.callSid
+            // })
 
             return response
         } catch (error) {

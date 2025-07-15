@@ -7,6 +7,7 @@ import { ApiError } from "../utils/api-error"
 import { HTTP_STATUS } from "../constants/http-status"
 import { CallWebhookService } from "../services/call/call-webhook.service"
 import { ConversationService } from "../services/conversation/conversation.service"
+import { TWILIO_CONFIG } from "../config/twilio"
 
 export class WebhookController {
     private callWebhookService: CallWebhookService
@@ -40,7 +41,10 @@ export class WebhookController {
             logger.error("Error handling incoming call:", error)
             res.status(500)
                 .type("text/xml")
-                .send(`<Response><Say voice="aditi" language="hi-IN">I apologize, but I'm experiencing technical difficulties.</Say></Response>`)
+                .send(
+                    `<Response><Say voice=${TWILIO_CONFIG.voice.hi.voice} language=${TWILIO_CONFIG.defaultLanguage}>
+                        I apologize, but I'm experiencing technical difficulties.</Say></Response>`
+                )
         }
     }
 
@@ -90,7 +94,7 @@ export class WebhookController {
 
             // Extract phone number from request for user knowledge context
             const phoneNumber = req.body.From || req.body.Caller
-            
+
             // Process conversation through service
             const conversationResult =
                 await this.conversationService.processUserInput(

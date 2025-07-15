@@ -1,5 +1,4 @@
 import twilio from "twilio"
-import { logger } from "../../utils/logger"
 import { TWILIO_CONFIG, getVoiceConfig } from "../../config/twilio"
 import { ConversationResult } from "../../types/conversation.types"
 import { CallWebhookPayload } from "../../types/call.types"
@@ -15,7 +14,7 @@ export class CallWebhookService {
         twiml.say(
             {
                 voice: TWILIO_CONFIG.voice.hi.voice as any,
-                language: TWILIO_CONFIG.voice.hi.language
+                language: TWILIO_CONFIG.defaultLanguage
             },
             "Hello! Thank you for calling. I'm here to help you today. How may I assist you?"
         )
@@ -154,8 +153,8 @@ export class CallWebhookService {
         })
 
         // Natural follow-up based on language
-        const followUp = this.getFollowUpMessage(conversationResult.language)
-        gather.say(voiceSettings, followUp)
+        // const followUp = this.getFollowUpMessage(conversationResult.language)
+        // gather.say(voiceSettings, followUp)
 
         // Redirect to keep conversation flowing
         twiml.redirect("/api/calls/webhook/voice")

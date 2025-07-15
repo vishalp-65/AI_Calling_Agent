@@ -9,15 +9,15 @@ export const twilioClient = twilio(
 export const TWILIO_CONFIG = {
     phoneNumber: config.twilio.phoneNumber,
     defaultLanguage: "hi-IN" as const,
-    supportedLanguages: ["hi-IN", "en-IN"] as const,
+    // supportedLanguages: ["hi-IN", "en-IN"] as const,
     voice: {
         hi: {
             language: "hi-IN" as const,
-            voice: "aditi" as const
+            voice: "Neural2-D" as const
         },
         en: {
             language: "en-IN" as const,
-            voice: "aditi" as const
+            voice: "Neural2-D" as const
         }
     },
     speechRecognition: {
@@ -31,5 +31,7 @@ export const TWILIO_CONFIG = {
 }
 
 export const getVoiceConfig = (language: "hi-IN" | "en-IN") => {
-    return language === "hi-IN" ? TWILIO_CONFIG.voice.hi : TWILIO_CONFIG.voice.en
+    return language === "hi-IN"
+        ? TWILIO_CONFIG.voice.hi
+        : TWILIO_CONFIG.voice.en
 }

@@ -216,9 +216,9 @@ export class UserKnowledgeService {
     }
 
     private async extractPDFContent(fileContent: Buffer): Promise<string> {
-        // For now, return a placeholder. In production, you'd use a PDF parser like pdf-parse
+        // For now, return a placeholder. In production, we'd use a PDF parser like pdf-parse
         try {
-            // This is a simplified version - you should use a proper PDF parser
+            // This is a simplified version - we should use a proper PDF parser
             const content = fileContent.toString("utf-8")
             return content
         } catch (error) {
