@@ -8,16 +8,28 @@ export const twilioClient = twilio(
 
 export const TWILIO_CONFIG = {
     phoneNumber: config.twilio.phoneNumber,
+    defaultLanguage: "hi-IN" as const,
+    supportedLanguages: ["hi-IN", "en-IN"] as const,
     voice: {
-        language: "hi-IN" as const,
-        voice: "aditi" as const
+        hi: {
+            language: "hi-IN" as const,
+            voice: "aditi" as const
+        },
+        en: {
+            language: "en-IN" as const,
+            voice: "aditi" as const
+        }
     },
     speechRecognition: {
-        timeout: 5,
+        timeout: 3, // Reduced from 5 to 3 seconds
         speechTimeout: "auto",
         enhanced: true,
         model: "phone_call"
     },
     accountSid: config.twilio.accountSid,
     authToken: config.twilio.authToken
+}
+
+export const getVoiceConfig = (language: "hi-IN" | "en-IN") => {
+    return language === "hi-IN" ? TWILIO_CONFIG.voice.hi : TWILIO_CONFIG.voice.en
 }

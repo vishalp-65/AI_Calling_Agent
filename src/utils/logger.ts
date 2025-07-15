@@ -29,20 +29,50 @@ const transports: winston.transport[] = [
     })
 ]
 
-// Add file transport for production
-if (config.env === "production") {
-    transports.push(
-        new winston.transports.File({
-            filename: "logs/error.log",
-            level: "error",
-            format: logFormat
-        }),
-        new winston.transports.File({
-            filename: "logs/combined.log",
-            format: logFormat
-        })
-    )
+// Add file transports for all environments
+const fs = require('fs')
+const path = require('path')
+
+// Create logs directory if it doesn't exist
+const logsDir = path.join(process.cwd(), 'logs')
+if (!fs.existsSync(logsDir)) {
+    fs.mkdirSync(logsDir, { recursive: true })
 }
+
+// Always add file transports
+transports.push(
+    new winston.transports.File({
+        filename: path.join(logsDir, 'error.log'),
+        level: "error",
+        format: logFormat,
+        maxsize: 5242880, // 5MB
+        maxFiles: 5,
+        tailable: true
+    }),
+    new winston.transports.File({
+        filename: path.join(logsDir, 'combined.log'),
+        format: logFormat,
+        maxsize: 5242880, // 5MB
+        maxFiles: 5,
+        tailable: true
+    }),
+    new winston.transports.File({
+        filename: path.join(logsDir, 'calls.log'),
+        level: "info",
+        format: logFormat,
+        maxsize: 10485760, // 10MB for call logs
+        maxFiles: 10,
+        tailable: true
+    }),
+    new winston.transports.File({
+        filename: path.join(logsDir, 'ai-processing.log'),
+        level: "debug",
+        format: logFormat,
+        maxsize: 5242880, // 5MB
+        maxFiles: 5,
+        tailable: true
+    })
+)
 
 export const logger = winston.createLogger({
     level: config.monitoring.logLevel,

@@ -1,6 +1,6 @@
 import twilio from "twilio"
 import { logger } from "../../utils/logger"
-import { TWILIO_CONFIG } from "../../config/twilio"
+import { TWILIO_CONFIG, getVoiceConfig } from "../../config/twilio"
 import { ConversationResult } from "../../types/conversation.types"
 import { CallWebhookPayload } from "../../types/call.types"
 
@@ -14,8 +14,8 @@ export class CallWebhookService {
         // Warm, welcoming greeting
         twiml.say(
             {
-                voice: TWILIO_CONFIG.voice.voice as any,
-                language: "en-US" as any
+                voice: TWILIO_CONFIG.voice.hi.voice as any,
+                language: TWILIO_CONFIG.voice.hi.language
             },
             "Hello! Thank you for calling. I'm here to help you today. How may I assist you?"
         )
@@ -36,17 +36,17 @@ export class CallWebhookService {
             speechModel: "phone_call",
             action: `/api/calls/webhook/gather`,
             method: "POST",
-            language: "en-US",
+            language: TWILIO_CONFIG.voice.hi.language,
             hints: "yes, no, help, support, information, hindi, english, problem, issue"
         })
 
-        gather.say(
-            {
-                voice: TWILIO_CONFIG.voice.voice as any,
-                language: "en-US" as any
-            },
-            "I'm listening carefully. Please go ahead and tell me what you need."
-        )
+        // gather.say(
+        //     {
+        //         voice: TWILIO_CONFIG.voice.hi.voice as any,
+        //         language: TWILIO_CONFIG.voice.hi.language
+        //     },
+        //     "I'm listening carefully. Please go ahead and tell me what you need."
+        // )
 
         // Fallback if no input
         twiml.say("I didn't hear anything. Let me try again.")
@@ -68,8 +68,8 @@ export class CallWebhookService {
             // Polite outgoing call introduction
             twiml.say(
                 {
-                    voice: TWILIO_CONFIG.voice.voice as any,
-                    language: "en-US" as any
+                    voice: TWILIO_CONFIG.voice.hi.voice as any,
+                    language: TWILIO_CONFIG.voice.hi.language
                 },
                 "Hello! This is your AI assistant calling. I hope I'm not disturbing you. I'm here to help with any questions or support you might need. How are you doing today?"
             )
@@ -90,13 +90,13 @@ export class CallWebhookService {
                 speechModel: "phone_call",
                 action: `/api/calls/webhook/gather`,
                 method: "POST",
-                language: "en-US"
+                language: TWILIO_CONFIG.voice.hi.language
             })
 
             gather.say(
                 {
-                    voice: TWILIO_CONFIG.voice.voice as any,
-                    language: "en-US" as any
+                    voice: TWILIO_CONFIG.voice.hi.voice as any,
+                    language: TWILIO_CONFIG.voice.hi.language
                 },
                 "Please feel free to share what's on your mind."
             )
@@ -147,7 +147,9 @@ export class CallWebhookService {
             action: `/api/calls/webhook/gather`,
             method: "POST",
             language:
-                conversationResult.language === "hindi" ? "hi-IN" : "en-US",
+                conversationResult.language === "hindi"
+                    ? TWILIO_CONFIG.voice.hi.language
+                    : TWILIO_CONFIG.voice.en.language,
             hints: this.getLanguageHints(conversationResult.language)
         })
 
@@ -176,8 +178,8 @@ export class CallWebhookService {
 
         twiml.say(
             {
-                voice: TWILIO_CONFIG.voice.voice as any,
-                language: "en-US" as any
+                voice: TWILIO_CONFIG.voice.hi.voice as any,
+                language: TWILIO_CONFIG.voice.hi.language
             },
             randomMessage
         )
@@ -191,8 +193,8 @@ export class CallWebhookService {
 
         twiml.say(
             {
-                voice: TWILIO_CONFIG.voice.voice as any,
-                language: "en-US" as any
+                voice: TWILIO_CONFIG.voice.hi.voice as any,
+                language: TWILIO_CONFIG.voice.hi.language
             },
             message
         )
@@ -202,9 +204,11 @@ export class CallWebhookService {
     }
 
     private getVoiceSettings(language: string) {
+        const langCode = language === "hindi" ? "hi-IN" : "en-IN"
+        const voiceConfig = getVoiceConfig(langCode as "hi-IN" | "en-IN")
         return {
-            voice: TWILIO_CONFIG.voice.voice as any,
-            language: language === "hindi" ? ("hi-IN" as any) : ("en-US" as any)
+            voice: voiceConfig.voice as any,
+            language: voiceConfig.language
         }
     }
 
@@ -217,9 +221,9 @@ export class CallWebhookService {
 
     private getFollowUpMessage(language: string): string {
         if (language === "hindi") {
-            return "क्या आपको कोई और सहायता चाहिए? मैं यहाँ हूँ।"
+            return "क्या आपको कोई और सहायता चाहिए ?"
         }
-        return "Is there anything else I can help you with? I'm here for you."
+        return "Is there anything else I can help you with ?"
     }
 }
 

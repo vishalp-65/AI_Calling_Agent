@@ -1,8 +1,9 @@
-import { OpenAIService } from "./openai.service"
+import { TWILIO_CONFIG } from "../../config/twilio"
+import { GeminiService } from "./gemini.service"
 
 export class AiAgentService {
-    private openAI = new OpenAIService()
-    private userLang: "en" | "hi" = "en"
+    private gemini = new GeminiService()
+    private userLang: "en" | "hi" = "hi" // Default to Hindi
 
     // initial greeting
     greet() {
@@ -35,13 +36,13 @@ export class AiAgentService {
             : "Is there anything else I can help you with?"
     }
 
-    async respond(text: string, langCode: "en-US" | "hi-IN") {
+    async respond(text: string, langCode: "hi-IN" | "en-IN") {
         // switch userLang if requested
         if (langCode === "hi-IN") this.userLang = "hi"
         else this.userLang = "en"
 
         const language = this.userLang === "hi" ? "hindi" : "english"
-        
+
         const conversationContext = {
             callSid: "ai-agent-call",
             currentLanguage: language,
@@ -51,7 +52,9 @@ export class AiAgentService {
             timestamp: new Date().toISOString()
         }
 
-        const ai = await this.openAI.generateNaturalResponse(conversationContext)
+        const ai = await this.gemini.generateNaturalResponse(
+            conversationContext
+        )
 
         return {
             message: ai.message,

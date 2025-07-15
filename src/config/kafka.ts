@@ -1,6 +1,5 @@
 import { Kafka, Producer, Consumer } from "kafkajs"
 import { config } from "./index"
-import { logger } from "../utils/logger"
 
 export const kafka = new Kafka({
     clientId: config.kafka.clientId,

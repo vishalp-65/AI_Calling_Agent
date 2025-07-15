@@ -11,8 +11,8 @@ import { ConversationService } from "../services/conversation/conversation.servi
 export class WebhookController {
     private callWebhookService: CallWebhookService
     private conversationService: ConversationService
-    private mediaStreamService: any  // Fixed type issue
-    private callStatusService: any   // Fixed type issue
+    private mediaStreamService: any // Fixed type issue
+    private callStatusService: any // Fixed type issue
 
     constructor() {
         this.callWebhookService = new CallWebhookService()
@@ -38,10 +38,9 @@ export class WebhookController {
             res.type("text/xml").send(twiml)
         } catch (error) {
             logger.error("Error handling incoming call:", error)
-            const errorTwiml = this.callWebhookService.generateErrorResponse(
-                "I apologize, but I'm experiencing technical difficulties. Please try again later."
-            )
-            res.type("text/xml").send(errorTwiml)
+            res.status(500)
+                .type("text/xml")
+                .send(`<Response><Say voice="aditi" language="hi-IN">I apologize, but I'm experiencing technical difficulties.</Say></Response>`)
         }
     }
 
@@ -89,12 +88,16 @@ export class WebhookController {
                 return
             }
 
+            // Extract phone number from request for user knowledge context
+            const phoneNumber = req.body.From || req.body.Caller
+            
             // Process conversation through service
             const conversationResult =
                 await this.conversationService.processUserInput(
                     speechData.callSid,
                     speechData.speechResult,
-                    speechData.confidence
+                    speechData.confidence,
+                    phoneNumber
                 )
 
             // Generate TwiML response

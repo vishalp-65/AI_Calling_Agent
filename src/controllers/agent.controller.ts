@@ -10,7 +10,7 @@ export class AgentController {
             const { prompt, context, history } = req.body
             const conversationContext = {
                 callSid: "agent-controller-call",
-                currentLanguage: context?.language || "english",
+                currentLanguage: context?.language || "hindi",
                 userInput: prompt,
                 confidence: 0.9,
                 conversationHistory: history || [],

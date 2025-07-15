@@ -1,6 +1,7 @@
 import { GeminiService } from "../ai/gemini.service"
 import { LanguageDetectionService } from "../ai/language-detection.service"
 import { ConversationHistoryService } from "./conversation-history.service"
+import { userKnowledgeService } from "../knowledge/user-knowledge.service"
 import { logger } from "../../utils/logger"
 import {
     ConversationResult,
@@ -22,15 +23,19 @@ export class ConversationService {
     async processUserInput(
         callSid: string,
         userInput: string,
-        confidence: number
+        confidence: number,
+        phoneNumber?: string
     ): Promise<ConversationResult> {
         try {
-            // Detect language and intent
-            const detectedLanguage =
-                await this.languageDetectionService.detectLanguage(userInput)
+            // Detect language and intent (parallel processing for better performance)
+            const [detectedLanguage, conversationHistory] = await Promise.all([
+                this.languageDetectionService.detectLanguage(userInput),
+                this.conversationHistoryService.getHistory(callSid)
+            ])
+
             const currentLanguage =
                 this.conversationHistoryService.getCurrentLanguage(callSid) ||
-                "english"
+                "hindi" // Changed default to Hindi
 
             // Check for language switch request
             const languageSwitch = this.detectLanguageSwitch(
@@ -38,9 +43,43 @@ export class ConversationService {
                 currentLanguage
             )
 
-            // Get conversation history
-            const conversationHistory =
-                this.conversationHistoryService.getHistory(callSid)
+            // Get user-specific knowledge context if phone number provided
+            let customerInfo = {}
+            let userKnowledgeContext = ""
+
+            if (phoneNumber) {
+                try {
+                    const [userProfile, knowledgeContext] = await Promise.all([
+                        userKnowledgeService.getUserProfile(phoneNumber),
+                        userKnowledgeService.getContextForUser(
+                            phoneNumber,
+                            userInput
+                        )
+                    ])
+
+                    if (userProfile) {
+                        customerInfo = {
+                            name: userProfile.name,
+                            preferredLanguage: userProfile.preferredLanguage,
+                            totalCalls: userProfile.totalCalls,
+                            metadata: userProfile.metadata
+                        }
+
+                        // Update user call count
+                        await userKnowledgeService.createOrUpdateUserProfile(
+                            phoneNumber,
+                            {}
+                        )
+                    }
+
+                    userKnowledgeContext = knowledgeContext
+                } catch (error) {
+                    logger.warn(
+                        `Failed to fetch user context for ${phoneNumber}:`,
+                        error
+                    )
+                }
+            }
 
             // Build conversation context
             const context: ConversationContext = {
@@ -49,7 +88,12 @@ export class ConversationService {
                 userInput,
                 confidence,
                 conversationHistory,
-                timestamp: new Date().toISOString()
+                customerInfo,
+                timestamp: new Date().toISOString(),
+                sessionMetadata: {
+                    phoneNumber,
+                    userKnowledgeContext
+                }
             }
 
             // Generate AI response
@@ -117,39 +161,34 @@ export class ConversationService {
     ): string | null {
         const input = userInput.toLowerCase()
 
-        // English language switch patterns
+        // Optimized language switch patterns with faster regex
         const englishPatterns = [
-            /can you (speak|talk|switch to) english/i,
-            /please speak english/i,
-            /i want to speak in english/i,
-            /switch to english/i,
-            /english please/i,
-            /speak english/i
+            /can you.*(speak|talk|switch).*(english|angrej)/i,
+            /(please|pls).*(speak|talk).*(english|angrej)/i,
+            /(english|angrej).*(please|pls|me|main)/i,
+            /switch.*(english|angrej)/i
         ]
 
-        // Hindi language switch patterns
         const hindiPatterns = [
-            /can you (speak|talk|switch to) hindi/i,
-            /please speak hindi/i,
-            /i want to speak in hindi/i,
-            /switch to hindi/i,
-            /hindi please/i,
-            /speak hindi/i,
-            /हिंदी में बात करें/i,
-            /हिंदी में बोलें/i,
-            /हिंदी बोलिए/i
+            /can you.*(speak|talk|switch).*(hindi|हिंदी)/i,
+            /(please|pls).*(speak|talk).*(hindi|हिंदी)/i,
+            /(hindi|हिंदी).*(please|pls|me|main)/i,
+            /switch.*(hindi|हिंदी)/i,
+            /हिंदी.*(में|मे).*(बात|बोल)/i,
+            /हिंदी.*(बोलिए|बोलें|करें)/i
         ]
 
+        // Quick check for current language to avoid unnecessary processing
         if (
-            englishPatterns.some((pattern) => pattern.test(input)) &&
-            currentLanguage !== "english"
+            currentLanguage !== "english" &&
+            englishPatterns.some((pattern) => pattern.test(input))
         ) {
             return "english"
         }
 
         if (
-            hindiPatterns.some((pattern) => pattern.test(input)) &&
-            currentLanguage !== "hindi"
+            currentLanguage !== "hindi" &&
+            hindiPatterns.some((pattern) => pattern.test(input))
         ) {
             return "hindi"
         }

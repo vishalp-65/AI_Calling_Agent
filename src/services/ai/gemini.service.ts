@@ -28,14 +28,14 @@ export class GeminiService {
         context: ConversationContext
     ): Promise<NaturalAIResponse> {
         try {
-            // Build system prompt
+            // Build system prompt with user knowledge context
             const systemPrompt = this.buildSystemPrompt(context.currentLanguage)
-
-            // Build conversation history
+            // const userContext = this.buildUserContext(context)
             const conversationHistory = this.buildConversationMessages(context)
 
-            // Create the full prompt with structured output request
+            // Create optimized prompt for faster response
             const fullPrompt = `${systemPrompt}
+
 
 CONVERSATION HISTORY:
 ${conversationHistory}
@@ -44,7 +44,7 @@ USER INPUT: ${context.userInput}
 CONFIDENCE: ${context.confidence}
 LANGUAGE: ${context.currentLanguage}
 
-Please respond in the following JSON format:
+Respond in JSON format:
 {
     "response": "your natural response here",
     "intent": "detected intent",
@@ -59,7 +59,19 @@ Please respond in the following JSON format:
 
 Respond ONLY with valid JSON, no other text.`
 
-            const result = await this.model.generateContent(fullPrompt)
+            // Use optimized generation config for faster response
+            const optimizedModel = this.client.getGenerativeModel({
+                model: GEMINI_CONFIG.model,
+                generationConfig: {
+                    temperature: 0.7, // Slightly less creative for faster response
+                    topK: 20, // Reduced for faster generation
+                    topP: 0.8,
+                    maxOutputTokens: 300, // Reduced for phone calls
+                    responseMimeType: "text/plain"
+                }
+            })
+
+            const result = await optimizedModel.generateContent(fullPrompt)
             const response = await result.response
             const text = response.text()
 
@@ -191,6 +203,31 @@ SAMPLE ENGLISH RESPONSES:
         })
 
         return messages
+    }
+
+    private buildUserContext(context: ConversationContext): string {
+        let userContext = ""
+
+        // Add customer information if available
+        if (context.customerInfo) {
+            userContext += "CUSTOMER INFORMATION:\n"
+            const info = context.customerInfo as any
+            if (info.name) userContext += `Name: ${info.name}\n`
+            if (info.totalCalls)
+                userContext += `Total Calls: ${info.totalCalls}\n`
+            if (info.preferredLanguage)
+                userContext += `Preferred Language: ${info.preferredLanguage}\n`
+            userContext += "\n"
+        }
+
+        // Add user-specific knowledge context if available
+        if (context.sessionMetadata?.userKnowledgeContext) {
+            userContext += "USER KNOWLEDGE CONTEXT:\n"
+            userContext += context.sessionMetadata.userKnowledgeContext
+            userContext += "\n\n"
+        }
+
+        return userContext
     }
 
     // Note: Gemini doesn't support speech-to-text directly

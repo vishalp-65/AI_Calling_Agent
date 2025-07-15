@@ -2,6 +2,7 @@ import { Router } from "express"
 import { callRoutes } from "./call.routes"
 import { agentRoutes } from "./agent.routes"
 import { knowledgeRoutes } from "./knowledge.routes"
+import { userKnowledgeRoutes } from "./user-knowledge.routes"
 import { ResponseHandler } from "../utils/response"
 import { databaseConnection } from "../database/connection"
 import { redisService } from "../services/cache/redis.service"
@@ -46,6 +47,7 @@ router.get("/health", async (req, res) => {
 router.use("/calls", callRoutes)
 router.use("/agents", agentRoutes)
 router.use("/knowledge", knowledgeRoutes)
+router.use("/user-knowledge", userKnowledgeRoutes)
 
 // 404 handler for unknown routes
 // router.use("*", (req, res) => {

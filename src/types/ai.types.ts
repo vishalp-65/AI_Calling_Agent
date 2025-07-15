@@ -41,3 +41,10 @@ export interface SpeechToTextResult {
     language?: string
     duration?: number
 }
+
+export interface VectorSearchOptions {
+    phoneNumber?: string
+    topK?: number
+    filter?: Record<string, any>
+    userId?: string
+}

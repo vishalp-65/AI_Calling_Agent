@@ -35,8 +35,7 @@ export class TwilioService {
                     "completed"
                 ],
                 statusCallbackMethod: "POST",
-                record: true,
-                recordingStatusCallback: `${process.env.BASE_URL}/api/calls/webhook/recording`,
+record: false, // Disable recording to save costs
                 timeout: 30
             })
 
@@ -100,9 +99,11 @@ export class TwilioService {
 
         response.say(
             {
-                voice: (options.voice || TWILIO_CONFIG.voice.voice) as any,
-                language: (options.language ||
-                    TWILIO_CONFIG.voice.language) as any
+                // voice: (options.voice || TWILIO_CONFIG.voice.voice) as any,
+                // language: (options.language ||
+                //     TWILIO_CONFIG.voice.language) as any
+                voice: TWILIO_CONFIG.voice.hi.voice as any,
+                language: TWILIO_CONFIG.voice.hi.language
             },
             message
         )
@@ -207,8 +208,8 @@ export class TwilioService {
         // Welcome message
         response.say(
             {
-                voice: TWILIO_CONFIG.voice.voice as any,
-                language: TWILIO_CONFIG.voice.language as any
+                voice: TWILIO_CONFIG.voice.hi.voice as any,
+                language: TWILIO_CONFIG.voice.hi.language
             },
             "Hello! I'm your AI assistant. How can I help you today?"
         )

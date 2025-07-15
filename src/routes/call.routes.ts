@@ -24,10 +24,11 @@ router.get("/media-stream/:callSid", (req, res) => {
         webhookController.handleMediaStream(ws, req)
     })
 })
-router.post(
-    "/webhook/recording",
-    webhookController.handleRecordingComplete.bind(webhookController)
-)
+// Recording disabled to save costs
+// router.post(
+//     "/webhook/recording",
+//     webhookController.handleRecordingComplete.bind(webhookController)
+// )
 
 // Existing routes
 
