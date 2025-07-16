@@ -1,49 +1,58 @@
-export class ApiError extends Error {
-    public statusCode: number
-    public isOperational: boolean
+import httpStatus from "http-status"
 
-    constructor(message: string, statusCode: number, isOperational = true) {
+export class ApiError extends Error {
+    statusCode: number
+    isOperational: boolean
+    details?: any
+
+    constructor(
+        statusCode: number,
+        message: string,
+        isOperational = true,
+        details?: any
+    ) {
         super(message)
         this.statusCode = statusCode
         this.isOperational = isOperational
+        this.details = details
 
-        // Maintain proper stack trace
+        // Capture stack trace
         Error.captureStackTrace(this, this.constructor)
     }
 
-    static badRequest(message: string): ApiError {
-        return new ApiError(message, 400)
+    static badRequest(message: string, details?: any): ApiError {
+        return new ApiError(httpStatus.BAD_REQUEST, message, true, details)
     }
 
-    static unauthorized(message: string): ApiError {
-        return new ApiError(message, 401)
+    static unauthorized(message: string = "Unauthorized"): ApiError {
+        return new ApiError(httpStatus.UNAUTHORIZED, message, true)
     }
 
-    static forbidden(message: string): ApiError {
-        return new ApiError(message, 403)
+    static forbidden(message: string = "Forbidden"): ApiError {
+        return new ApiError(httpStatus.FORBIDDEN, message, true)
     }
 
-    static notFound(message: string): ApiError {
-        return new ApiError(message, 404)
+    static notFound(message: string = "Resource not found"): ApiError {
+        return new ApiError(httpStatus.NOT_FOUND, message, true)
     }
 
-    static conflict(message: string): ApiError {
-        return new ApiError(message, 409)
+    static conflict(message: string, details?: any): ApiError {
+        return new ApiError(httpStatus.CONFLICT, message, true, details)
     }
 
-    static unprocessableEntity(message: string): ApiError {
-        return new ApiError(message, 422)
+    static tooManyRequests(message: string = "Too many requests"): ApiError {
+        return new ApiError(httpStatus.TOO_MANY_REQUESTS, message, true)
     }
 
-    static tooManyRequests(message: string): ApiError {
-        return new ApiError(message, 429)
-    }
-
-    static internal(message: string): ApiError {
-        return new ApiError(message, 500)
-    }
-
-    static serviceUnavailable(message: string): ApiError {
-        return new ApiError(message, 503)
+    static internal(
+        message: string = "Internal server error",
+        details?: any
+    ): ApiError {
+        return new ApiError(
+            httpStatus.INTERNAL_SERVER_ERROR,
+            message,
+            false,
+            details
+        )
     }
 }
