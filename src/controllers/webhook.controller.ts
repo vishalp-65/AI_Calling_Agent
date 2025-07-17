@@ -39,11 +39,14 @@ export class WebhookController {
             res.type("text/xml").send(twiml)
         } catch (error) {
             logger.error("Error handling incoming call:", error)
-            res.status(500)
+            res.status(200) // Always return 200 to Twilio to prevent retries
                 .type("text/xml")
                 .send(
-                    `<Response><Say voice=${TWILIO_CONFIG.voice.hi.voice} language=${TWILIO_CONFIG.defaultLanguage}>
-                        I apologize, but I'm experiencing technical difficulties.</Say></Response>`
+                    `<Response><Say voice="${TWILIO_CONFIG.voice.hi.voice}" language="${TWILIO_CONFIG.defaultLanguage}">
+                        नमस्ते! मैं आपकी सहायता करने के लिए यहाँ हूँ। कृपया बताएं मैं आपकी कैसे मदद कर सकता हूँ?
+                    </Say><Gather input="speech" timeout="5" action="/api/calls/webhook/gather" method="POST" language="${TWILIO_CONFIG.defaultLanguage}">
+                        <Say voice="${TWILIO_CONFIG.voice.hi.voice}" language="${TWILIO_CONFIG.defaultLanguage}">कृपया बोलें।</Say>
+                    </Gather></Response>`
                 )
         }
     }
@@ -93,7 +96,7 @@ export class WebhookController {
             }
 
             // Extract phone number from request for user knowledge context
-            const phoneNumber = req.body.From || req.body.Caller
+            const phoneNumber = req.body.From || ""
 
             // Process conversation through service
             const conversationResult =
