@@ -24,9 +24,16 @@ export class ConversationService {
         callSid: string,
         userInput: string,
         confidence: number,
-        phoneNumber?: string
+        phoneNumber?: string,
+        isStreaming: boolean = false
     ): Promise<ConversationResult> {
         try {
+            // Handle empty or invalid user input
+            if (!userInput || userInput.trim().length === 0) {
+                logger.warn(`Empty user input for call ${callSid}`)
+                return this.generateNoInputResponse(callSid)
+            }
+
             // Detect language and intent (parallel processing for better performance)
             const [detectedLanguage, conversationHistory] = await Promise.all([
                 this.languageDetectionService.detectLanguage(userInput),
@@ -96,7 +103,7 @@ export class ConversationService {
                 }
             }
 
-            // Generate AI response
+            // Generate AI response with streaming optimization
             const aiResponse = await this.geminiService.generateNaturalResponse(
                 context
             )
@@ -196,6 +203,32 @@ export class ConversationService {
         return null
     }
 
+    private generateNoInputResponse(callSid: string): ConversationResult {
+        const currentLanguage =
+            (this.conversationHistoryService.getCurrentLanguage(callSid) as
+                | "english"
+                | "hindi") || "hindi" // Default to Hindi
+
+        const noInputMessages = {
+            english:
+                "I didn't catch that. Could you please speak a bit louder or repeat what you said?",
+            hindi: "मुझे कुछ सुनाई नहीं दिया। कृपया थोड़ा तेज़ बोलें या फिर से बताएं?"
+        }
+
+        return {
+            callSid,
+            response: noInputMessages[currentLanguage] || noInputMessages.hindi,
+            language: currentLanguage,
+            intent: "no_input",
+            entities: {},
+            confidence: 0.9,
+            shouldTransfer: false,
+            shouldEndCall: false,
+            nextActions: ["retry_input"],
+            timestamp: new Date().toISOString()
+        }
+    }
+
     private generateErrorResponse(
         callSid: string,
         userInput: string,
@@ -204,7 +237,7 @@ export class ConversationService {
         const currentLanguage =
             (this.conversationHistoryService.getCurrentLanguage(callSid) as
                 | "english"
-                | "hindi") || "english"
+                | "hindi") || "hindi" // Default to Hindi
 
         const errorMessages = {
             english:
@@ -214,7 +247,7 @@ export class ConversationService {
 
         return {
             callSid,
-            response: errorMessages[currentLanguage] || errorMessages.english,
+            response: errorMessages[currentLanguage] || errorMessages.hindi,
             language: currentLanguage,
             intent: "error_recovery",
             entities: {},
