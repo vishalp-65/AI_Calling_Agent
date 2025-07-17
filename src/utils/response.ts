@@ -1,6 +1,7 @@
 import { Response } from "express"
 import httpStatus from "http-status"
 import { logger } from "./logger"
+import { ApiError } from "./api-error"
 
 export interface ApiResponse<T = any> {
     success: boolean
@@ -76,6 +77,42 @@ export class ResponseHandler {
         })
 
         return res.status(statusCode).json(response)
+    }
+
+    static handleError(res: Response, error: any): Response {
+        if (error instanceof ApiError) {
+            return this.error(
+                res,
+                error.message,
+                error.statusCode,
+                error.details
+            )
+        }
+
+        // Handle validation errors
+        if (error.name === "ValidationError") {
+            return this.badRequest(res, error.message, error)
+        }
+
+        // Handle database errors
+        if (
+            error.name === "SequelizeUniqueConstraintError" ||
+            error.code === "23505"
+        ) {
+            // PostgreSQL unique violation
+            return this.conflict(
+                res,
+                "A record with this data already exists",
+                error
+            )
+        }
+
+        // Default to server error for unhandled errors
+        return this.serverError(
+            res,
+            error.message || "Internal server error",
+            error
+        )
     }
 
     static paginated<T>(
