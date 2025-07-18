@@ -3,7 +3,7 @@ import { PineconeService } from "../ai/pinecone.service"
 import { promises as fs } from "fs"
 import path from "path"
 import { v4 as uuidv4 } from "uuid"
-import * as csv from "csv-parser"
+import csv from "csv-parser"
 import { Readable } from "stream"
 
 export interface UserKnowledgeDocument {
@@ -201,17 +201,21 @@ export class UserKnowledgeService {
             const results: any[] = []
             const stream = Readable.from(fileContent.toString())
 
-            // stream
-            //     .pipe(csv())
-            //     .on('data', (data:any ) => results.push(data))
-            //     .on('end', () => {
-            //         // Convert CSV data to readable text
-            //         const content = results.map(row =>
-            //             Object.entries(row).map(([key, value]) => `${key}: ${value}`).join(', ')
-            //         ).join('\n')
-            //         resolve(content)
-            //     })
-            //     .on('error', reject)
+            stream
+                .pipe(csv())
+                .on("data", (data: any) => results.push(data))
+                .on("end", () => {
+                    // Convert CSV data to readable text
+                    const content = results
+                        .map((row) =>
+                            Object.entries(row)
+                                .map(([key, value]) => `${key}: ${value}`)
+                                .join(", ")
+                        )
+                        .join("\n")
+                    resolve(content)
+                })
+                .on("error", reject)
         })
     }
 
