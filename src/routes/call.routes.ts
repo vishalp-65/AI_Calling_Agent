@@ -3,55 +3,63 @@ import { validateRequest } from "../middlewares/validation.middleware"
 import { createCallSchema } from "../models/schemas/call.schema"
 import { callController } from "../controllers/call.controller"
 import { webhookController } from "../controllers/webhook.controller"
+import { validateWebhookSignature } from "../middlewares/webhook-validation"
 
-const router = Router()
+// Create two separate routers
+const webhookRouter = Router()
+const callRouter = Router()
 
-router.post(
-    "/webhook/voice",
+// Webhook routes (public but secured with signature validation)
+webhookRouter.post(
+    "/voice",
+    validateWebhookSignature,
     webhookController.handleIncomingCall.bind(webhookController)
 )
-router.post(
-    "/webhook/status",
+webhookRouter.post(
+    "/status",
+    validateWebhookSignature,
     webhookController.handleCallStatus.bind(webhookController)
 )
-router.post(
-    "/webhook/gather",
+webhookRouter.post(
+    "/gather",
+    validateWebhookSignature,
     webhookController.handleSpeechInput.bind(webhookController)
 )
-router.get("/media-stream/:callSid", (req, res) => {
+webhookRouter.get("/media-stream/:callSid", (req, res) => {
     const wsServer = req.app.get("wsServer")
     wsServer.handleUpgrade(req, req.socket, Buffer.alloc(0), (ws: any) => {
         webhookController.handleMediaStream(ws, req)
     })
 })
 // Recording disabled to save costs
-// router.post(
-//     "/webhook/recording",
+// webhookRouter.post(
+//     "/recording",
+//     validateWebhookSignature,
 //     webhookController.handleRecordingComplete.bind(webhookController)
 // )
 
-// Existing routes
-
+// Protected call routes (require authentication)
 // Route to initiate a call
-router.post(
+callRouter.post(
     "/initiate",
     validateRequest(createCallSchema),
     callController.initiateCall.bind(callController)
 )
 
 // Route to get call status
-router.get(
+callRouter.get(
     "/:callSid/status",
     callController.getCallStatus.bind(callController)
 )
 
 // Route to end a call
-router.patch("/:callSid/end", callController.endCall.bind(callController))
+callRouter.patch("/:callSid/end", callController.endCall.bind(callController))
 
 // Additional Routes
-router.post(
+callRouter.post(
     "/:callSid/processRealTime",
     callController.processRealTimeCall.bind(callController)
 )
 
-export { router as callRoutes }
+// Export both routers
+export { webhookRouter, callRouter as callRoutes }

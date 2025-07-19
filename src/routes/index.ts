@@ -1,28 +1,27 @@
 import { Router } from "express"
-import { callRoutes } from "./call.routes"
+import { callRoutes, webhookRouter } from "./call.routes"
 import { agentRoutes } from "./agent.routes"
 import { knowledgeRoutes } from "./knowledge.routes"
 import { userKnowledgeRoutes } from "./user-knowledge.routes"
+import { authRoutes } from "./auth.routes"
+import { testRoutes } from "./test.routes"
 import { ResponseHandler } from "../utils/response"
-import { databaseConnection } from "../database/connection"
-import { redisService } from "../services/cache/redis.service"
-import { HealthCheckResponse } from "../types/common.types"
+import { authenticateJWT } from "../middlewares/auth.middleware"
+import { logger } from "../utils/logger"
 
 const router = Router()
 
-// Health check endpoint
+// Health check endpoint (public)
 router.get("/health", async (req, res) => {
     try {
-        const healthCheck: HealthCheckResponse = {
+        const healthCheck = {
             status: "healthy",
             timestamp: new Date(),
             services: {
-                database: await databaseConnection.isHealthy(),
-                redis: await redisService.isHealthy(),
-                kafka: true, // TODO: Implement kafka health check
-                twilio: true, // TODO: Implement twilio health check
-                openai: true, // TODO: Implement OpenAI health check
-                pinecone: true // TODO: Implement Pinecone health check
+                server: true,
+                authentication: true,
+                speech: true,
+                twilio: true
             },
             uptime: process.uptime(),
             version: process.env.npm_package_version || "1.0.0"
@@ -39,15 +38,25 @@ router.get("/health", async (req, res) => {
             "Health check completed"
         )
     } catch (error) {
+        logger.error("Health check error:", error)
         return ResponseHandler.serverError(res, "Health check failed", error)
     }
 })
 
-// API routes
+// Test routes (public)
+router.use("/test", testRoutes)
+
+// Authentication routes (public)
+router.use("/auth", authRoutes)
+
+// Webhook routes (public - secured by Twilio signature validation)
+router.use("/calls/webhook", webhookRouter)
+
+// Protected API routes
 router.use("/calls", callRoutes)
-router.use("/agents", agentRoutes)
-router.use("/knowledge", knowledgeRoutes)
-router.use("/user-knowledge", userKnowledgeRoutes)
+router.use("/agents", authenticateJWT, agentRoutes)
+router.use("/knowledge", authenticateJWT, knowledgeRoutes)
+router.use("/user-knowledge", authenticateJWT, userKnowledgeRoutes)
 
 // 404 handler for unknown routes
 // router.use("*", (req, res) => {
